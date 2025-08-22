@@ -1,0 +1,92 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "IRON HUB",
+   LoadingTitle = "IRON HUB Loader",
+   LoadingSubtitle = "by Ter",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "IronHubConfigs", 
+      FileName = "AimlockCFG"
+   },
+   KeySystem = true 
+})
+
+
+local AimbotTab = Window:CreateTab("Aimbot", 4483362458) 
+local AimbotSection = AimbotTab:CreateSection("Settings")
+
+
+local FOVEnabled = false
+AimbotTab:CreateToggle({
+   Name = "Enable AimLock",
+   CurrentValue = false,
+   Flag = "AimLockToggle",
+   Callback = function(Value)
+      FOVEnabled = Value
+   end,
+})
+
+
+local FOVRadius = 120
+AimbotTab:CreateSlider({
+   Name = "FOV Size",
+   Range = {50, 500},
+   Increment = 10,
+   Suffix = "px",
+   CurrentValue = 120,
+   Flag = "FOVSlider",
+   Callback = function(Value)
+      FOVRadius = Value
+   end,
+})
+
+
+local Smoothness = 0.1
+AimbotTab:CreateSlider({
+   Name = "Smoothness",
+   Range = {0.01, 1},
+   Increment = 0.01,
+   CurrentValue = 0.1,
+   Flag = "SmoothnessSlider",
+   Callback = function(Value)
+      Smoothness = Value
+   end,
+})
+
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local function GetClosestEnemy()
+	local closestDist = FOVRadius
+	local target = nil
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+			if player.Team ~= LocalPlayer.Team then
+				local screenPos, onScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
+				if onScreen then
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+					if dist < closestDist then
+						closestDist = dist
+						target = player.Character.Head
+					end
+				end
+			end
+		end
+	end
+	return target
+end
+
+RunService.RenderStepped:Connect(function()
+	if FOVEnabled then
+		local target = GetClosestEnemy()
+		if target then
+			local direction = (target.Position - Camera.CFrame.Position).Unit
+			local targetCFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + direction)
+			Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, Smoothness)
+		end
+	end
+end)
